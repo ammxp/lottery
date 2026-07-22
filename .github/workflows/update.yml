@@ -1,0 +1,79 @@
+name: 更新彩票数据
+
+on:
+  schedule:
+    - cron: '0 16 * * *'   # 每天北京时间 0 点运行（UTC 16:00）
+  workflow_dispatch:        # 允许手动触发
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出仓库
+        uses: actions/checkout@v4
+
+      - name: 设置 Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: 安装依赖
+        run: pip install requests
+
+      - name: 抓取双色球数据
+        run: |
+          python -c "
+          import requests, json, re
+          url = 'https://datachart.500.com/ssq/history/newinc/history.php?start=03001&end=99999'
+          r = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'})
+          html = r.text
+          tbody = re.search(r'<tbody id=\"tdata\">(.*?)</tbody>', html, re.DOTALL)
+          if not tbody: exit()
+          rows = re.findall(r'<tr[^>]*>(.*?)</tr>', tbody.group(1), re.DOTALL)
+          data = []
+          for row in rows:
+              if 'th' in row or 'tdbck' in row: continue
+              cells = re.findall(r'<td[^>]*>(.*?)</td>', row, re.DOTALL)
+              if len(cells) < 8: continue
+              nums = [re.sub(r'<[^>]+>', '', c).strip() for c in cells]
+              issue = nums[0].zfill(5)
+              reds = list(map(int, nums[1:7]))
+              blues = list(map(int, nums[7:8]))
+              if len(reds)==6 and len(blues)==1:
+                  data.append({'issue': issue, 'red': reds, 'blue': blues})
+          with open('data/ssq.json', 'w', encoding='utf-8') as f:
+              json.dump(data, f, ensure_ascii=False, indent=2)
+          "
+
+      - name: 抓取大乐透数据
+        run: |
+          python -c "
+          import requests, json, re
+          url = 'https://datachart.500.com/dlt/history/newinc/history.php?start=07001&end=99999'
+          r = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'})
+          html = r.text
+          tbody = re.search(r'<tbody id=\"tdata\">(.*?)</tbody>', html, re.DOTALL)
+          if not tbody: exit()
+          rows = re.findall(r'<tr[^>]*>(.*?)</tr>', tbody.group(1), re.DOTALL)
+          data = []
+          for row in rows:
+              if 'th' in row or 'tdbck' in row: continue
+              cells = re.findall(r'<td[^>]*>(.*?)</td>', row, re.DOTALL)
+              if len(cells) < 8: continue
+              nums = [re.sub(r'<[^>]+>', '', c).strip() for c in cells]
+              issue = nums[0].zfill(5)
+              reds = list(map(int, nums[1:6]))
+              blues = list(map(int, nums[6:8]))
+              if len(reds)==5 and len(blues)==2:
+                  data.append({'issue': issue, 'red': reds, 'blue': blues})
+          with open('data/dlt.json', 'w', encoding='utf-8') as f:
+              json.dump(data, f, ensure_ascii=False, indent=2)
+          "
+
+      - name: 提交并推送变更
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/
+          git diff --staged --quiet || git commit -m "自动更新彩票数据"
+          git push
