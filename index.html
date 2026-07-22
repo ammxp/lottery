@@ -1,0 +1,1126 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <title>双色球 · 大乐透 · 通用选号</title>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, system-ui, 'PingFang SC', 'Microsoft YaHei', sans-serif; background: linear-gradient(145deg, #f0f4f8 0%, #e2eaf2 100%); min-height: 100vh; padding: 12px; padding-bottom: env(safe-area-inset-bottom, 12px); -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+        @media (prefers-color-scheme: dark) {
+            body { background: linear-gradient(145deg, #1a1a2e 0%, #16213e 100%); }
+            .container { background: rgba(30,30,50,0.92) !important; border-color: rgba(255,255,255,0.08) !important; box-shadow: 0 8px 40px rgba(0,0,0,0.5) !important; }
+            .header h1, .header h1 small, .sub, .collapsible-header, .strategy-panel .title, .filter-item label, .result-box .status-msg, .footer-info, .data-status, .quick-tip { color: #e0e0e0 !important; }
+            .upload-bar, .collapsible, .strategy-panel, .filter-item, .result-box, .ticket-item, .filter-grid .filter-item, .add-grid input, .search-row input, .strategy-panel .title .btn-preset, .lottery-selector select { background: rgba(255,255,255,0.06) !important; border-color: rgba(255,255,255,0.1) !important; color: #e0e0e0 !important; }
+            .filter-item input, .filter-item select, .add-grid input, .search-row input, .lottery-selector select { background: rgba(255,255,255,0.08) !important; color: #e0e0e0 !important; border-color: rgba(255,255,255,0.15) !important; }
+            .btn-sm, .btn-add, .btn-generate, .upload-bar label { background: #2a4b6e !important; }
+            .btn-generate { background: #b52e2e !important; }
+            .ball-sm.red { background: radial-gradient(circle at 30% 30%, #f15a5a, #8a1a1a) !important; }
+            .ball-sm.blue { background: radial-gradient(circle at 30% 30%, #5a8cff, #1a3a7a) !important; }
+            .ball-sm.front { background: radial-gradient(circle at 30% 30%, #d48c1a, #8a5a0a) !important; }
+            .ball-sm.back { background: radial-gradient(circle at 30% 30%, #4a7ad2, #1a3a6a) !important; }
+            .quick-tip { background: rgba(255,193,7,0.15) !important; border-color: #ffc107 !important; color: #ffd54f !important; }
+            .data-status.has-data { background: rgba(40,167,69,0.2) !important; color: #6fcf97 !important; }
+            .data-status.no-data { background: rgba(220,53,69,0.2) !important; color: #f1948a !important; }
+            .toast { background: rgba(0,0,0,0.85) !important; color: #fff !important; }
+        }
+        .container { max-width: 500px; width: 100%; margin: 0 auto; background: rgba(255,255,255,0.92); backdrop-filter: blur(10px); border-radius: 28px; padding: 18px 16px 24px; box-shadow: 0 8px 40px rgba(0,20,40,0.12); border: 1px solid rgba(255,255,255,0.3); }
+        .header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; margin-bottom: 6px; }
+        .header h1 { font-size: 22px; font-weight: 700; color: #1a2b3c; display: flex; align-items: center; gap: 6px; }
+        .header h1 small { font-size: 13px; font-weight: 400; color: #6a8aa5; }
+        .header .badge { background: #d43d3d; color: #fff; font-size: 11px; padding: 2px 12px; border-radius: 30px; font-weight: 600; }
+        .sub { color: #4a6a85; font-size: 13px; margin-bottom: 14px; padding-left: 12px; border-left: 3px solid #d43d3d; background: rgba(240,244,250,0.6); border-radius: 0 10px 10px 0; line-height: 1.6; padding: 6px 12px; }
+        .upload-bar { background: #f0f6fe; border: 2px dashed #b8cfe0; border-radius: 16px; padding: 12px 14px; margin-bottom: 14px; display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+        .upload-bar label { background: #2a4b6e; color: #fff; padding: 8px 16px; border-radius: 30px; font-size: 13px; font-weight: 500; cursor: pointer; transition: 0.2s; flex-shrink: 0; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; }
+        .upload-bar label:active { transform: scale(0.95); }
+        .upload-bar input[type="file"] { display: none; }
+        .upload-bar .status { font-size: 12px; color: #2a4b6e; flex: 1; min-width: 80px; }
+        .upload-bar .status .count { font-weight: 700; color: #c0392b; }
+        .btn-sm { background: #28a745; color: #fff; border: none; padding: 7px 14px; border-radius: 30px; font-size: 12px; font-weight: 600; cursor: pointer; transition: 0.2s; flex-shrink: 0; min-height: 36px; display: inline-flex; align-items: center; justify-content: center; }
+        .btn-sm:active { transform: scale(0.94); }
+        .btn-sm.danger { background: #6c757d; }
+        .btn-sm.export { background: #17a2b8; }
+        .btn-sm:disabled { opacity: 0.5; pointer-events: none; }
+        .collapsible { background: #f8fafc; border-radius: 16px; padding: 12px 14px; margin-bottom: 12px; border: 1px solid #dce6ef; }
+        .collapsible-header { display: flex; justify-content: space-between; align-items: center; cursor: pointer; font-weight: 600; font-size: 14px; color: #1a2b3c; user-select: none; min-height: 44px; }
+        .collapsible-header:active { opacity: 0.6; }
+        .collapsible-body { display: none; padding-top: 12px; border-top: 1px dashed #dce6ef; margin-top: 10px; }
+        .collapsible.open .collapsible-body { display: block; }
+        .add-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+        .add-grid input { padding: 8px 4px; border-radius: 16px; border: 1px solid #ccc; font-size: 13px; text-align: center; background: #fff; min-height: 44px; width: 100%; }
+        .add-grid .full-width { grid-column: 1 / -1; }
+        .btn-add { background: #d43d3d; color: #fff; border: none; padding: 10px; border-radius: 30px; font-weight: 600; font-size: 15px; cursor: pointer; transition: 0.2s; min-height: 44px; width: 100%; }
+        .btn-add:active { transform: scale(0.97); }
+        .search-row { display: flex; gap: 8px; margin-bottom: 14px; }
+        .search-row input { flex: 1; padding: 10px 16px; border-radius: 30px; border: 1px solid #ccc; font-size: 16px; outline: none; background: #fff; min-height: 44px; }
+        .search-row input:focus { border-color: #2a4b6e; box-shadow: 0 0 0 3px rgba(42,75,110,0.15); }
+        .search-row button { padding: 10px 20px; border-radius: 30px; border: none; background: #2a4b6e; color: #fff; font-weight: 600; font-size: 14px; cursor: pointer; min-height: 44px; flex-shrink: 0; }
+        .search-row button:active { transform: scale(0.95); }
+        .strategy-panel { background: #f8fafc; border-radius: 16px; padding: 14px 14px 6px; margin-bottom: 14px; border: 1px solid #dce6ef; }
+        .strategy-panel .title { font-weight: 600; font-size: 14px; color: #1a2b3c; display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+        .strategy-panel .title .btn-preset { background: #2a4b6e; color: #fff; border: none; padding: 4px 14px; border-radius: 30px; font-size: 12px; cursor: pointer; min-height: 30px; }
+        .strategy-panel .title .btn-preset:active { transform: scale(0.95); }
+        .filter-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .filter-item { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; background: #fff; padding: 4px 8px 4px 6px; border-radius: 30px; border: 1px solid #e2e8f0; font-size: 12px; min-height: 36px; }
+        .filter-item input[type="checkbox"] { width: 18px; height: 18px; accent-color: #d43d3d; cursor: pointer; flex-shrink: 0; }
+        .filter-item label { font-size: 12px; color: #1f3b55; font-weight: 500; cursor: pointer; flex-shrink: 0; }
+        .filter-item input[type="number"], .filter-item input[type="text"], .filter-item select { padding: 2px 6px; border-radius: 14px; border: 1px solid #ccc; font-size: 12px; background: #f9f9f9; min-height: 28px; width: 40px; }
+        .filter-item select { width: auto; min-width: 50px; }
+        .filter-item .range-label { font-size: 11px; color: #6a8aa5; }
+        .result-box { background: #ffffff; border-radius: 20px; padding: 16px 12px 12px; margin: 12px 0 16px; box-shadow: inset 0 2px 8px rgba(0,0,0,0.02), 0 4px 16px rgba(0,20,40,0.06); min-height: 120px; }
+        .result-box .status-msg { font-size: 13px; color: #1e3b5a; background: #eaf2fa; display: inline-block; padding: 4px 16px; border-radius: 30px; margin-bottom: 12px; width: auto; }
+        .ticket-item { background: #f8fafc; border-radius: 14px; padding: 10px 12px; margin-bottom: 10px; border: 1px solid #eef2f6; }
+        .ticket-item:last-child { margin-bottom: 0; }
+        .ticket-item .ticket-header { display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: #6a8aa5; margin-bottom: 6px; }
+        .ticket-item .ticket-header .label { font-weight: 600; color: #1a2b3c; }
+        .ticket-item .balls-row { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
+        .ball-sm { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 50%; font-size: 15px; font-weight: 700; color: #fff; flex-shrink: 0; box-shadow: 0 2px 6px rgba(0,0,0,0.08); }
+        .ball-sm.red { background: radial-gradient(circle at 30% 30%, #f15a5a, #b71c1c); }
+        .ball-sm.blue { background: radial-gradient(circle at 30% 30%, #5a8cff, #0d47a1); }
+        .ball-sm.front { background: radial-gradient(circle at 30% 30%, #f5a623, #d48c1a); }
+        .ball-sm.back { background: radial-gradient(circle at 30% 30%, #4a90e2, #2a5f8f); }
+        .btn-generate { background: #d43d3d; border: none; color: #fff; font-size: 18px; font-weight: 700; padding: 14px 20px; border-radius: 60px; width: 100%; cursor: pointer; transition: 0.2s; letter-spacing: 0.5px; box-shadow: 0 6px 20px rgba(212,61,61,0.3); min-height: 52px; }
+        .btn-generate:active { transform: scale(0.96); box-shadow: 0 3px 12px rgba(212,61,61,0.25); }
+        .footer-info { margin-top: 16px; font-size: 11px; color: #8a9aa5; text-align: center; border-top: 1px solid #dce6ef; padding-top: 14px; line-height: 1.8; }
+        .footer-info code { background: #eef3f8; padding: 1px 8px; border-radius: 12px; font-size: 11px; color: #1f3b55; }
+        .toast { position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%) scale(0.9); background: rgba(0,0,0,0.78); color: #fff; padding: 14px 24px; border-radius: 16px; font-size: 15px; font-weight: 500; z-index: 9999; opacity: 0; pointer-events: none; transition: all 0.25s ease; text-align: center; max-width: 85%; backdrop-filter: blur(6px); }
+        .toast.show { opacity: 1; transform: translate(-50%,-50%) scale(1); }
+        @media (max-width:420px) { .container { padding: 14px 10px 18px; border-radius: 20px; } .header h1 { font-size: 19px; } .ball-sm { width: 32px; height: 32px; font-size: 13px; } .filter-grid { grid-template-columns: 1fr 1fr; gap: 6px; } .filter-item { font-size: 11px; padding: 3px 6px 3px 4px; min-height: 32px; } .filter-item input[type="number"], .filter-item input[type="text"] { width: 34px; font-size: 11px; min-height: 24px; } .add-grid { grid-template-columns: repeat(4,1fr); gap: 6px; } .add-grid input { font-size: 12px; min-height: 36px; padding: 6px 2px; } .btn-generate { font-size: 16px; padding: 12px 16px; min-height: 46px; } .ticket-item { padding: 8px 10px; } .ticket-item .balls-row { gap: 4px; } }
+        @media (max-width:360px) { .ball-sm { width: 28px; height: 28px; font-size: 11px; } .filter-grid { grid-template-columns: 1fr; } .add-grid { grid-template-columns: repeat(3,1fr); } }
+        @media (min-width:600px) { .container { max-width: 560px; padding: 24px 28px; } .ball-sm { width: 40px; height: 40px; font-size: 17px; } .filter-grid { grid-template-columns: repeat(3,1fr); } }
+        .quick-tip { background: #fff3cd; border: 1px solid #ffc107; border-radius: 12px; padding: 10px 12px; margin-top: 10px; font-size: 12px; color: #856404; display: none; }
+        .lottery-selector { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+        .lottery-selector select { flex: 1; padding: 10px 12px; border-radius: 30px; border: 1px solid #ccc; font-size: 16px; font-weight: 600; background: #fff; min-height: 44px; }
+        .lottery-selector select:focus { border-color: #2a4b6e; outline: none; }
+        .data-status { font-size: 11px; padding: 2px 10px; border-radius: 12px; background: #eef3f8; display: inline-block; white-space: nowrap; }
+        .data-status.has-data { background: #d4edda; color: #155724; }
+        .data-status.no-data { background: #f8d7da; color: #721c24; }
+        .tip-text { font-size: 10px; color: #888; margin-left: 2px; }
+    </style>
+</head>
+<body>
+
+<div class="toast" id="toast"></div>
+
+<div class="container">
+    <div class="header">
+        <h1>🎲 彩票 <small>通用版</small></h1>
+        <span class="badge">5注</span>
+    </div>
+    <div class="sub">⚡ 双色球 / 大乐透 · 数据隔离 · 策略过滤</div>
+
+    <div class="lottery-selector">
+        <select id="lotteryType">
+            <option value="ssq">双色球</option>
+            <option value="dlt">大乐透</option>
+        </select>
+        <span class="data-status" id="dataStatus">📊 加载中</span>
+    </div>
+
+    <div class="upload-bar">
+        <label for="fileInput">📂 导入</label>
+        <input type="file" id="fileInput" accept=".xlsx,.xls,.json" />
+        <span class="status" id="fileStatus">📊 <span class="count" id="historyCount">0</span> 期</span>
+        <button class="btn-sm export" id="exportBtn">📤 导出</button>
+        <button class="btn-sm" id="updateBtn">🌐 更新</button>
+        <button class="btn-sm danger" id="clearStorageBtn">🗑️</button>
+    </div>
+
+    <div class="quick-tip" id="quickTip">
+        💡 <strong>联网失败？</strong> 从官网复制最新号码（如 <code>26081 06 10 12 15 24 27 12</code>），粘贴到下方"手动新增"即可。
+    </div>
+
+    <div class="collapsible" id="addCollapsible">
+        <div class="collapsible-header" onclick="toggleCollapse('addCollapsible')">
+            <span>📝 手动新增</span>
+            <span style="font-size:16px;">▼</span>
+        </div>
+        <div class="collapsible-body" id="addBody"></div>
+    </div>
+
+    <div class="search-row">
+        <input type="text" id="searchIssue" placeholder="输入期号查询" />
+        <button id="searchBtn">🔍</button>
+    </div>
+
+    <div class="strategy-panel">
+        <div class="title">
+            <span>🧩 过滤条件</span>
+            <button class="btn-preset" id="applyPreset">⭐ 推荐</button>
+            <span class="tip-text" id="rangeTip">📊 冷热/走势独立期数</span>
+        </div>
+        <div class="filter-grid" id="filterGrid"></div>
+    </div>
+
+    <div class="result-box" id="resultBox">
+        <div class="status-msg" id="statusMsg">点击下方生成 5 注</div>
+        <div id="ticketsContainer"></div>
+    </div>
+
+    <button class="btn-generate" id="generateBtn">🎯 生成 5 注</button>
+
+    <div class="footer-info">
+        <p>📁 双色球与 大乐透 数据完全隔离，互不干扰</p>
+        <p style="color:#999;font-size:10px;">数据来源：GitHub 社区维护 · CDN 加速</p>
+        <p style="color:#bbb;margin-top:4px;">💡 娱乐参考 · 理性购彩</p>
+    </div>
+</div>
+
+<script>
+// ============================================================
+// 0. 公共请求头（模拟真实浏览器）
+// ============================================================
+const COMMON_HEADERS = {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36',
+    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
+    'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
+    'Accept-Encoding': 'gzip, deflate, br',
+    'Connection': 'keep-alive',
+    'Cache-Control': 'max-age=0',
+    'Referer': 'https://www.sporttery.cn/',
+    'Origin': 'https://www.sporttery.cn'
+};
+
+// ============================================================
+// 1. 彩种配置 ———— 纯文本数据源
+// ============================================================
+function parsePlainText(text, redCount, blueCount, redMax, blueMax) {
+    const records = [];
+    const lines = text.split('\n');
+    for (let line of lines) {
+        line = line.trim();
+        if (!line) continue;
+        const parts = line.split(/\s+/);
+        if (parts.length < redCount + blueCount + 1) continue;
+        const issue = parts[0].padStart(5, '0');
+        if (!/^\d{5}$/.test(issue)) continue;
+        const reds = parts.slice(1, 1 + redCount).map(Number);
+        const blues = parts.slice(1 + redCount, 1 + redCount + blueCount).map(Number);
+        if (reds.some(isNaN) || blues.some(isNaN)) continue;
+        if (reds.some(n => n < 1 || n > redMax) || blues.some(n => n < 1 || n > blueMax)) continue;
+        reds.sort((a,b)=>a-b); blues.sort((a,b)=>a-b);
+        records.push({ issue, red: reds, blue: blues });
+    }
+    return records;
+}
+
+const LOTTERY_CONFIG = {
+    ssq: {
+        name: '双色球', storageKey: 'ssq_history_data', redCount:6, blueCount:1, redMax:33, blueMax:16,
+        redLabel:'红球', blueLabel:'蓝球', ballClass:{red:'red', blue:'blue'},
+        defaultHistory: [
+            { issue: "25001", red: [2,6,11,12,13,33], blue: [15] },
+            { issue: "25002", red: [1,5,7,18,30,32], blue: [2] },
+            { issue: "25003", red: [5,6,9,21,28,30], blue: [16] },
+            { issue: "25004", red: [3,7,8,9,18,32], blue: [10] },
+            { issue: "25005", red: [1,20,22,27,30,33], blue: [10] },
+            { issue: "25006", red: [2,6,22,23,24,28], blue: [15] },
+            { issue: "25007", red: [9,13,19,27,29,30], blue: [1] },
+            { issue: "25008", red: [6,9,16,27,31,33], blue: [10] },
+            { issue: "25009", red: [3,6,13,19,23,25], blue: [10] },
+            { issue: "25010", red: [4,9,10,15,19,26], blue: [12] }
+        ],
+        preset: {
+            hotCold:{hot:1,cold:1}, sum:{min:75,max:125}, morph:{oddEven:'3:3', size:'3:3'},
+            chart:{repeat:1,consecutive:1,edge:1}, missLayer:'warm', zone:'2:2:2',
+            span:{min:20,max:30}, golden:{min:105,max:121}
+        },
+        dataSources: [
+            'https://cdn.jsdelivr.net/gh/BEWINDOWEB/lotterydata@main/lot_500_ssq.txt',
+            'https://ghproxy.com/https://raw.githubusercontent.com/BEWINDOWEB/lotterydata/main/lot_500_ssq.txt',
+            'https://raw.githubusercontent.com/BEWINDOWEB/lotterydata/main/lot_500_ssq.txt'
+        ],
+        parseData: function(text) { return parsePlainText(text, this.redCount, this.blueCount, this.redMax, this.blueMax); }
+    },
+    dlt: {
+        name: '大乐透', storageKey: 'dlt_history_data', redCount:5, blueCount:2, redMax:35, blueMax:12,
+        redLabel:'前区', blueLabel:'后区', ballClass:{red:'front', blue:'back'},
+        defaultHistory: [
+            { issue: "25001", red: [5,12,18,25,33], blue: [4,9] },
+            { issue: "25002", red: [3,10,15,22,30], blue: [1,11] },
+            { issue: "25003", red: [8,14,19,26,34], blue: [5,10] },
+            { issue: "25004", red: [1,9,17,24,31], blue: [6,8] },
+            { issue: "25005", red: [6,13,20,28,35], blue: [3,12] },
+            { issue: "25006", red: [4,11,21,27,32], blue: [2,7] },
+            { issue: "25007", red: [7,16,23,29,34], blue: [4,9] },
+            { issue: "25008", red: [2,10,18,25,33], blue: [1,11] },
+            { issue: "25009", red: [9,15,22,30,35], blue: [5,10] },
+            { issue: "25010", red: [3,12,19,26,31], blue: [6,8] }
+        ],
+        preset: {
+            hotCold:{hot:1,cold:1}, sum:{min:50,max:100}, morph:{oddEven:'3:2', size:'3:2'},
+            chart:{repeat:1,consecutive:1,edge:1}, missLayer:'warm', zone:null,
+            span:{min:15,max:30}, golden:{min:65,max:85}
+        },
+        dataSources: [
+            'https://cdn.jsdelivr.net/gh/BEWINDOWEB/lotterydata@main/lot_500_dlt.txt',
+            'https://ghproxy.com/https://raw.githubusercontent.com/BEWINDOWEB/lotterydata/main/lot_500_dlt.txt',
+            'https://raw.githubusercontent.com/BEWINDOWEB/lotterydata/main/lot_500_dlt.txt'
+        ],
+        parseData: function(text) { return parsePlainText(text, this.redCount, this.blueCount, this.redMax, this.blueMax); }
+    }
+};
+
+// ============================================================
+// 2. 当前彩种 & 数据
+// ============================================================
+let currentLottery = 'ssq';
+let historyData = [];
+
+function getConfig(){ return LOTTERY_CONFIG[currentLottery]; }
+function loadFromStorage(){
+    const config = getConfig();
+    const stored = localStorage.getItem(config.storageKey);
+    if(stored){ try{ const parsed=JSON.parse(stored); if(Array.isArray(parsed)&&parsed.length>0){ historyData=parsed; return true; } }catch(e){} }
+    return false;
+}
+function saveToStorage(){ localStorage.setItem(getConfig().storageKey, JSON.stringify(historyData)); }
+function initData(){ if(!loadFromStorage()){ historyData=[...getConfig().defaultHistory]; saveToStorage(); } updateDataStatus(); }
+
+// ============================================================
+// 3. 工具函数：获取统计期数（独立）
+// ============================================================
+function getPeriodValue(elId){
+    const el = document.getElementById(elId);
+    if(!el) return null;
+    const val = parseInt(el.value);
+    if(isNaN(val) || val <= 0) return null;
+    return val;
+}
+
+// ============================================================
+// 4. 统计 & 走势范围计算（独立期数）
+// ============================================================
+function calcTrendRanges(data, config, periodCount){
+    if(periodCount === null || periodCount > data.length) periodCount = data.length;
+    if(periodCount < 1) periodCount = data.length || 0;
+    const used = data.slice(-periodCount);
+    const rc=config.redCount, bc=config.blueCount;
+    const redRanges = [], blueRanges = [];
+    for(let pos=0; pos<rc; pos++){
+        const freq = {};
+        for(let item of used){
+            const num = item.red[pos];
+            freq[num] = (freq[num]||0)+1;
+        }
+        const candidates = Object.keys(freq).filter(k => freq[k] >= 2).map(Number);
+        if(candidates.length === 0) redRanges.push([1, config.redMax]);
+        else redRanges.push([Math.min(...candidates), Math.max(...candidates)]);
+    }
+    for(let pos=0; pos<bc; pos++){
+        const freq = {};
+        for(let item of used){
+            const num = item.blue[pos];
+            freq[num] = (freq[num]||0)+1;
+        }
+        const candidates = Object.keys(freq).filter(k => freq[k] >= 2).map(Number);
+        if(candidates.length === 0) blueRanges.push([1, config.blueMax]);
+        else blueRanges.push([Math.min(...candidates), Math.max(...candidates)]);
+    }
+    return { redRanges, blueRanges };
+}
+
+// 计算冷热分类（仅红球），基于指定期数，返回 { hotSet, coldSet }
+function calcHotCold(data, config, periodCount){
+    if(periodCount === null || periodCount > data.length) periodCount = data.length;
+    if(periodCount < 1) periodCount = data.length || 0;
+    const used = data.slice(-periodCount);
+    const freq = new Array(config.redMax+1).fill(0);
+    used.forEach(item => item.red.forEach(r => freq[r]++));
+    const total = freq.reduce((a,b)=>a+b, 0);
+    const avg = total / config.redMax;
+    const hotSet = new Set(), coldSet = new Set();
+    for(let i=1; i<=config.redMax; i++){
+        if(freq[i] >= avg) hotSet.add(i);
+        else coldSet.add(i);
+    }
+    return { hotSet, coldSet };
+}
+
+// ============================================================
+// 5. UI 动态生成
+// ============================================================
+function updateAddForm(){
+    const config=getConfig();
+    const container=document.getElementById('addBody');
+    if(!container) return;
+    let html='<div class="add-grid">';
+    html+='<input type="text" id="addIssue" placeholder="期号" style="grid-column:span 1;">';
+    for(let i=1;i<=config.redCount;i++) html+='<input type="number" id="addR'+i+'" placeholder="'+config.redLabel+i+'" min="1" max="'+config.redMax+'">';
+    for(let i=1;i<=config.blueCount;i++) html+='<input type="number" id="addB'+i+'" placeholder="'+config.blueLabel+i+'" min="1" max="'+config.blueMax+'">';
+    html+='<button class="btn-add full-width" id="addRecordBtn">➕ 添加</button>';
+    html+='</div>';
+    container.innerHTML=html;
+    document.getElementById('addRecordBtn').addEventListener('click', addRecord);
+}
+
+function updateFilterGrid(){
+    const config=getConfig();
+    const container=document.getElementById('filterGrid');
+    if(!container) return;
+    const isDlt=currentLottery==='dlt';
+    let html=`
+        <div class="filter-item">
+            <input type="checkbox" id="enableHotCold"><label>🔥冷热</label>
+            <input type="number" id="hotCount" value="1" style="width:34px;" min="0">热
+            <input type="number" id="coldCount" value="1" style="width:34px;" min="0">冷
+            <input type="number" id="coldHotPeriods" value="" style="width:44px;" min="1" placeholder="期">
+        </div>
+        <div class="filter-item">
+            <input type="checkbox" id="enableTrend"><label>📉走势范围</label>
+            <input type="number" id="trendPeriods" value="" style="width:44px;" min="1" placeholder="期">
+        </div>
+        <div class="filter-item"><input type="checkbox" id="enableSum"><label>📊和值</label><input type="number" id="minSum" value="${config.preset.sum.min}" style="width:38px;"><span class="range-label">~</span><input type="number" id="maxSum" value="${config.preset.sum.max}" style="width:38px;"></div>
+        <div class="filter-item"><input type="checkbox" id="enableMorph"><label>🎨奇/大</label><input type="text" id="oddEven" value="${config.preset.morph.oddEven}" style="width:36px;"><input type="text" id="sizeRatio" value="${config.preset.morph.size}" style="width:36px;"></div>
+        <div class="filter-item"><input type="checkbox" id="enableChart"><label>📈重连边</label><input type="number" id="chartRepeat" value="${config.preset.chart.repeat}" style="width:30px;">重<input type="number" id="chartConsecutive" value="${config.preset.chart.consecutive}" style="width:30px;">连<input type="number" id="chartEdge" value="${config.preset.chart.edge}" style="width:30px;">边</div>
+        <div class="filter-item"><input type="checkbox" id="enableMissLayer"><label>📌遗漏</label><select id="chartMissLayer"><option value="warm">中</option><option value="hot">近</option><option value="cold">长</option></select></div>
+    `;
+    if(!isDlt){
+        html+=`<div class="filter-item"><input type="checkbox" id="enableZone"><label>📐区间</label><input type="text" id="zoneRatio" value="2:2:2" style="width:48px;"></div>`;
+    } else {
+        html+=`<div class="filter-item" style="visibility:hidden;"></div>`;
+    }
+    html+=`
+        <div class="filter-item"><input type="checkbox" id="enableSpan"><label>📏跨度</label><input type="number" id="minSpan" value="${config.preset.span.min}" style="width:34px;"><span class="range-label">~</span><input type="number" id="maxSpan" value="${config.preset.span.max}" style="width:34px;"></div>
+        <div class="filter-item"><input type="checkbox" id="enableGolden"><label>✨黄金</label><span style="font-size:10px;color:#888;">${config.preset.golden.min}~${config.preset.golden.max}</span></div>
+    `;
+    container.innerHTML=html;
+}
+
+function updateSearchPlaceholder(){
+    const el=document.getElementById('searchIssue');
+    if(el) el.placeholder='输入'+getConfig().name+'期号查询';
+}
+
+// ============================================================
+// 6. 关键改动：顶部显示最新期号，下方显示总期数
+// ============================================================
+function updateDataStatus(){
+    const config=getConfig();
+    const el=document.getElementById('dataStatus');
+    if(!el) return;
+    const count=historyData.length;
+    let latestIssue = '';
+    if(count>0){
+        // 按 issue 数字排序取最大（期号5位数字）
+        const sorted = [...historyData].sort((a,b)=>parseInt(b.issue)-parseInt(a.issue));
+        latestIssue = sorted[0].issue;
+    }
+    if(count>10){
+        el.className='data-status has-data';
+        el.textContent='📅 最新 '+latestIssue;
+    } else if(count>0){
+        el.className='data-status has-data';
+        el.textContent='📅 最新 '+latestIssue+'（示例）';
+    } else {
+        el.className='data-status no-data';
+        el.textContent='⚠️ '+config.name+' 无数据';
+    }
+}
+
+// 更新总期数（下方）
+function updateTotalCount(){
+    const el=document.getElementById('historyCount');
+    if(el) el.textContent=historyData.length;
+    document.getElementById('fileStatus').innerHTML='📊 <span class="count">'+historyData.length+'</span> 期';
+}
+
+// ============================================================
+// 7. 策略状态持久化
+// ============================================================
+function saveStrategyState(){
+    const state = {};
+    const panel = document.querySelector('.strategy-panel');
+    if(!panel) return;
+    const controls = panel.querySelectorAll('input, select');
+    controls.forEach(ctrl => {
+        if(ctrl.id){
+            if(ctrl.type === 'checkbox'){
+                state[ctrl.id] = ctrl.checked;
+            } else {
+                state[ctrl.id] = ctrl.value;
+            }
+        }
+    });
+    const lotteryType = document.getElementById('lotteryType');
+    if(lotteryType) state['lotteryType'] = lotteryType.value;
+    localStorage.setItem('lottery_strategy_state', JSON.stringify(state));
+}
+
+function loadStrategyState(){
+    const saved = localStorage.getItem('lottery_strategy_state');
+    if(!saved) return;
+    try{
+        const state = JSON.parse(saved);
+        const panel = document.querySelector('.strategy-panel');
+        if(!panel) return;
+        const controls = panel.querySelectorAll('input, select');
+        controls.forEach(ctrl => {
+            if(ctrl.id && state.hasOwnProperty(ctrl.id)){
+                if(ctrl.type === 'checkbox'){
+                    ctrl.checked = state[ctrl.id];
+                } else {
+                    ctrl.value = state[ctrl.id];
+                }
+            }
+        });
+        const lotteryType = document.getElementById('lotteryType');
+        if(lotteryType && state.hasOwnProperty('lotteryType')){
+            lotteryType.value = state.lotteryType;
+        }
+    } catch(e){}
+}
+
+document.addEventListener('change', function(e){
+    const panel = document.querySelector('.strategy-panel');
+    if(panel && panel.contains(e.target)){
+        saveStrategyState();
+    }
+});
+
+// ============================================================
+// 8. 工具函数
+// ============================================================
+function generateRandomTicket(config, trendRanges){
+    const reds=[], blues=[];
+    const rc=config.redCount, bc=config.blueCount;
+    for(let pos=0; pos<rc; pos++){
+        let range = (trendRanges && trendRanges.redRanges && trendRanges.redRanges[pos]) ? trendRanges.redRanges[pos] : [1, config.redMax];
+        let min=range[0], max=range[1];
+        if(min>max){ min=1; max=config.redMax; }
+        let attempts=0, num;
+        do {
+            num = Math.floor(Math.random()*(max-min+1)) + min;
+            attempts++;
+            if(attempts>1000) { num=Math.floor(Math.random()*config.redMax)+1; break; }
+        } while(reds.includes(num));
+        reds.push(num);
+    }
+    reds.sort((a,b)=>a-b);
+    for(let pos=0; pos<bc; pos++){
+        let range = (trendRanges && trendRanges.blueRanges && trendRanges.blueRanges[pos]) ? trendRanges.blueRanges[pos] : [1, config.blueMax];
+        let min=range[0], max=range[1];
+        if(min>max){ min=1; max=config.blueMax; }
+        let attempts=0, num;
+        do {
+            num = Math.floor(Math.random()*(max-min+1)) + min;
+            attempts++;
+            if(attempts>1000) { num=Math.floor(Math.random()*config.blueMax)+1; break; }
+        } while(blues.includes(num));
+        blues.push(num);
+    }
+    blues.sort((a,b)=>a-b);
+    return { reds, blues };
+}
+
+function isInHistory(reds, blues){
+    return historyData.some(item => {
+        if(item.blue.length!==blues.length) return false;
+        for(let i=0;i<blues.length;i++) if(item.blue[i]!==blues[i]) return false;
+        if(item.red.length!==reds.length) return false;
+        for(let i=0;i<reds.length;i++) if(item.red[i]!==reds[i]) return false;
+        return true;
+    });
+}
+function countConsecutiveGroups(reds){
+    let groups=0, i=0;
+    while(i<reds.length-1){
+        if(reds[i+1]===reds[i]+1){ groups++; while(i<reds.length-1 && reds[i+1]===reds[i]+1) i++; } else i++;
+    }
+    return groups;
+}
+
+function calcStatsAll(data, config){
+    const rc=config.redCount, bc=config.blueCount;
+    stats.redFreq = new Array(config.redMax+1).fill(0);
+    stats.blueFreq = new Array(config.blueMax+1).fill(0);
+    stats.redMissing = new Array(config.redMax+1).fill(0);
+    stats.blueMissing = new Array(config.blueMax+1).fill(0);
+    stats.totalPeriods = data.length;
+    data.forEach(item => {
+        item.red.forEach(r => stats.redFreq[r]++);
+        item.blue.forEach(b => stats.blueFreq[b]++);
+    });
+    if(data.length>0){
+        const redSeen=new Set(), blueSeen=new Set();
+        for(let i=data.length-1; i>=0; i--){
+            const item=data[i];
+            item.red.forEach(r=>{ if(!redSeen.has(r)){ stats.redMissing[r]=data.length-1-i; redSeen.add(r); } });
+            item.blue.forEach(b=>{ if(!blueSeen.has(b)){ stats.blueMissing[b]=data.length-1-i; blueSeen.add(b); } });
+            if(redSeen.size===config.redMax && blueSeen.size===config.blueMax) break;
+        }
+        for(let i=1;i<=config.redMax;i++) if(!redSeen.has(i)) stats.redMissing[i]=data.length;
+        for(let i=1;i<=config.blueMax;i++) if(!blueSeen.has(i)) stats.blueMissing[i]=data.length;
+    }
+}
+let stats = { redFreq:[], blueFreq:[], redMissing:[], blueMissing:[], totalPeriods:0 };
+
+// ============================================================
+// 9. 单注生成（集成所有策略）
+// ============================================================
+function generateSingleTicket(trendRanges, hotSet, coldSet, hotCount, coldCount){
+    const config=getConfig();
+    const enableHotCold = document.getElementById('enableHotCold')?.checked || false;
+    const enableTrend = document.getElementById('enableTrend')?.checked || false;
+    const enableSum = document.getElementById('enableSum')?.checked || false;
+    const enableMorph = document.getElementById('enableMorph')?.checked || false;
+    const enableChart = document.getElementById('enableChart')?.checked || false;
+    const enableMissLayer = document.getElementById('enableMissLayer')?.checked || false;
+    const enableZone = document.getElementById('enableZone')?.checked || false;
+    const enableSpan = document.getElementById('enableSpan')?.checked || false;
+    const enableGolden = document.getElementById('enableGolden')?.checked || false;
+
+    let minSum = parseInt(document.getElementById('minSum')?.value) || 0;
+    let maxSum = parseInt(document.getElementById('maxSum')?.value) || 999;
+    const oddEvenStr = document.getElementById('oddEven')?.value || '3:3';
+    const sizeStr = document.getElementById('sizeRatio')?.value || '3:3';
+    const repeatTarget = parseInt(document.getElementById('chartRepeat')?.value) || 0;
+    const consecutiveTarget = parseInt(document.getElementById('chartConsecutive')?.value) || 0;
+    const edgeTarget = parseInt(document.getElementById('chartEdge')?.value) || 0;
+    const missLayer = document.getElementById('chartMissLayer')?.value || 'all';
+    const zoneStr = document.getElementById('zoneRatio')?.value || '2:2:2';
+    const minSpan = parseInt(document.getElementById('minSpan')?.value) || 0;
+    const maxSpan = parseInt(document.getElementById('maxSpan')?.value) || 999;
+
+    if(enableGolden){ minSum=config.preset.golden.min; maxSum=config.preset.golden.max; }
+
+    const [oddTarget, evenTarget] = oddEvenStr.split(':').map(Number);
+    const [smallTarget, largeTarget] = sizeStr.split(':').map(Number);
+    const smallMax = currentLottery==='ssq' ? 16 : 17;
+    const lastItem = historyData.length>0 ? historyData[historyData.length-1] : null;
+
+    let attempts=0, maxAttempts=100000, ticket=null;
+
+    while(attempts<maxAttempts){
+        attempts++;
+        let reds, blues;
+        if(enableTrend && trendRanges){
+            const tmp = generateRandomTicket(config, trendRanges);
+            reds = tmp.reds; blues = tmp.blues;
+        } else {
+            const tmp = generateRandomTicket(config, null);
+            reds = tmp.reds; blues = tmp.blues;
+        }
+
+        if(enableHotCold && hotSet && coldSet){
+            const redHotCount = reds.filter(r => hotSet.has(r)).length;
+            const redColdCount = reds.filter(r => coldSet.has(r)).length;
+            if(redHotCount < hotCount || redColdCount < coldCount) continue;
+        }
+
+        let valid = true;
+        if(enableSum){ const sum=reds.reduce((a,b)=>a+b,0); if(sum<minSum || sum>maxSum) valid=false; }
+        if(valid && enableMorph){
+            const oddCount=reds.filter(v=>v%2===1).length;
+            const evenCount=config.redCount-oddCount;
+            const smallCount=reds.filter(v=>v<=smallMax).length;
+            const largeCount=config.redCount-smallCount;
+            if(oddCount!==oddTarget || evenCount!==evenTarget || smallCount!==smallTarget || largeCount!==largeTarget) valid=false;
+        }
+        if(valid && enableChart && lastItem){
+            const repeatCount=reds.filter(n=>lastItem.red.includes(n)).length;
+            if(repeatCount!==repeatTarget) valid=false;
+            if(valid){ const consGroups=countConsecutiveGroups(reds); if(consGroups<consecutiveTarget) valid=false; }
+            if(valid){ const edgeCount=reds.filter(n=>lastItem.red.some(m=>Math.abs(n-m)===1)).length; if(edgeCount<edgeTarget) valid=false; }
+        }
+        if(valid && enableMissLayer){
+            for(let n of reds){
+                const miss=stats.redMissing[n]||0;
+                if(missLayer==='hot' && !(miss>=0 && miss<=5)){ valid=false; break; }
+                if(missLayer==='warm' && !(miss>=6 && miss<=15)){ valid=false; break; }
+                if(missLayer==='cold' && !(miss>=16)){ valid=false; break; }
+            }
+        }
+        if(valid && enableZone && currentLottery==='ssq'){
+            const [z1,z2,z3]=zoneStr.split(':').map(Number);
+            const c1=reds.filter(n=>n<=11).length;
+            const c2=reds.filter(n=>n>=12 && n<=22).length;
+            const c3=reds.filter(n=>n>=23).length;
+            if(c1!==z1 || c2!==z2 || c3!==z3) valid=false;
+        }
+        if(valid && enableSpan){
+            const span=reds[reds.length-1]-reds[0];
+            if(span<minSpan || span>maxSpan) valid=false;
+        }
+        if(valid && !isInHistory(reds, blues)){
+            ticket={reds, blues};
+            break;
+        }
+    }
+    if(!ticket){
+        let fallback = generateRandomTicket(config, null);
+        let fbAttempts=0;
+        while(isInHistory(fallback.reds, fallback.blues) && fbAttempts<1000){
+            fallback = generateRandomTicket(config, null);
+            fbAttempts++;
+        }
+        ticket=fallback;
+    }
+    return ticket;
+}
+
+// ============================================================
+// 10. 生成5注
+// ============================================================
+function generateFiveTickets(){
+    const config=getConfig();
+    const tickets=[];
+    const usedSet=new Set();
+
+    let trendRanges = null;
+    if(document.getElementById('enableTrend')?.checked){
+        const period = getPeriodValue('trendPeriods');
+        trendRanges = calcTrendRanges(historyData, config, period);
+    }
+
+    let hotSet = null, coldSet = null;
+    let hotCount=0, coldCount=0;
+    if(document.getElementById('enableHotCold')?.checked){
+        const period = getPeriodValue('coldHotPeriods');
+        const result = calcHotCold(historyData, config, period);
+        hotSet = result.hotSet;
+        coldSet = result.coldSet;
+        hotCount = parseInt(document.getElementById('hotCount')?.value) || 0;
+        coldCount = parseInt(document.getElementById('coldCount')?.value) || 0;
+    }
+
+    calcStatsAll(historyData, config);
+
+    let attempts=0;
+    while(tickets.length<5 && attempts<200){
+        attempts++;
+        const t = generateSingleTicket(trendRanges, hotSet, coldSet, hotCount, coldCount);
+        const key=t.reds.join(',')+'|'+t.blues.join(',');
+        if(!usedSet.has(key)){ usedSet.add(key); tickets.push(t); }
+    }
+    while(tickets.length<5){
+        const t=generateRandomTicket(config, null);
+        const key=t.reds.join(',')+'|'+t.blues.join(',');
+        if(!usedSet.has(key)){ usedSet.add(key); tickets.push(t); }
+    }
+    return tickets;
+}
+
+// ============================================================
+// 11. 渲染
+// ============================================================
+function renderTickets(tickets, title){
+    const container=document.getElementById('ticketsContainer');
+    const msg=document.getElementById('statusMsg');
+    const config=getConfig();
+    const isDlt=currentLottery==='dlt';
+    if(title){ if(msg){ msg.textContent=title; msg.style.background='#e3f2e9'; msg.style.color='#1e5a3a'; } }
+    else { if(msg){ msg.textContent='✅ 5注号码已生成（均未出现于历史）'; msg.style.background='#e3f2e9'; msg.style.color='#1e5a3a'; } }
+    let html='';
+    tickets.forEach((t,idx)=>{
+        const ballClassRed=isDlt?'front':'red';
+        const ballClassBlue=isDlt?'back':'blue';
+        const sum=t.reds.reduce((a,b)=>a+b,0);
+        html+=`
+            <div class="ticket-item">
+                <div class="ticket-header"><span class="label">第 ${idx+1} 注</span><span>和值 ${sum}</span></div>
+                <div class="balls-row">
+                    ${t.reds.map(n=>`<span class="ball-sm ${ballClassRed}">${n}</span>`).join('')}
+                    ${t.blues.map(n=>`<span class="ball-sm ${ballClassBlue}">${n}</span>`).join('')}
+                </div>
+            </div>
+        `;
+    });
+    container.innerHTML=html;
+}
+function showPlaceholder(text){
+    const msg=document.getElementById('statusMsg');
+    const container=document.getElementById('ticketsContainer');
+    if(msg){ msg.textContent=text||'点击下方生成 5 注'; msg.style.background='#eaf2fa'; msg.style.color='#1e3b5a'; }
+    if(container) container.innerHTML='';
+}
+
+// ============================================================
+// 12. Toast
+// ============================================================
+let toastTimer=null;
+function showToast(msg, duration=1800){
+    const el=document.getElementById('toast');
+    if(!el) return;
+    el.textContent=msg;
+    el.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer=setTimeout(()=>el.classList.remove('show'), duration);
+}
+
+// ============================================================
+// 13. 折叠面板
+// ============================================================
+function toggleCollapse(id){
+    const el=document.getElementById(id);
+    if(!el) return;
+    el.classList.toggle('open');
+    const arrow=el.querySelector('.collapsible-header span:last-child');
+    if(arrow) arrow.textContent=el.classList.contains('open')?'▲':'▼';
+}
+
+// ============================================================
+// 14. 推荐设置
+// ============================================================
+function applyPreset(){
+    const config=getConfig();
+    const p=config.preset;
+    const ids=['enableHotCold','enableTrend','enableSum','enableMorph','enableChart','enableMissLayer','enableSpan','enableGolden'];
+    ids.forEach(id=>{ const el=document.getElementById(id); if(el) el.checked=true; });
+    if(currentLottery==='ssq'){ const el=document.getElementById('enableZone'); if(el) el.checked=true; }
+    const map={
+        hotCount:p.hotCold.hot, coldCount:p.hotCold.cold,
+        minSum:p.sum.min, maxSum:p.sum.max,
+        oddEven:p.morph.oddEven, sizeRatio:p.morph.size,
+        chartRepeat:p.chart.repeat, chartConsecutive:p.chart.consecutive, chartEdge:p.chart.edge,
+        chartMissLayer:p.missLayer, minSpan:p.span.min, maxSpan:p.span.max,
+    };
+    Object.keys(map).forEach(id=>{ const el=document.getElementById(id); if(el) el.value=map[id]; });
+    if(currentLottery==='ssq'){ const el=document.getElementById('zoneRatio'); if(el) el.value=p.zone; }
+    ['coldHotPeriods','trendPeriods'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+    showPlaceholder('✅ 已应用推荐设置');
+    showToast('✅ 推荐设置已应用');
+    saveStrategyState();
+}
+document.getElementById('applyPreset').addEventListener('click', applyPreset);
+
+// ============================================================
+// 15. 手动新增
+// ============================================================
+function addRecord(){
+    const config=getConfig();
+    const issueEl=document.getElementById('addIssue');
+    const issue=issueEl?issueEl.value.trim():'';
+    const reds=[], blues=[];
+    for(let i=1;i<=config.redCount;i++){
+        const el=document.getElementById('addR'+i);
+        const val=el?parseInt(el.value):NaN;
+        if(isNaN(val)||val<1||val>config.redMax){ showToast('⚠️ 请正确填写'+config.redLabel+' '+i); return; }
+        reds.push(val);
+    }
+    for(let i=1;i<=config.blueCount;i++){
+        const el=document.getElementById('addB'+i);
+        const val=el?parseInt(el.value):NaN;
+        if(isNaN(val)||val<1||val>config.blueMax){ showToast('⚠️ 请正确填写'+config.blueLabel+' '+i); return; }
+        blues.push(val);
+    }
+    reds.sort((a,b)=>a-b); blues.sort((a,b)=>a-b);
+    let targetIssue=issue;
+    if(/^\d+$/.test(targetIssue)) targetIssue=targetIssue.padStart(5,'0');
+    if(historyData.some(item=>item.issue===targetIssue)){ showToast('⚠️ 期号 '+targetIssue+' 已存在'); return; }
+    historyData.push({ issue:targetIssue, red:reds, blue:blues });
+    saveToStorage();
+    updateStatsAndUI();
+    if(issueEl) issueEl.value='';
+    for(let i=1;i<=config.redCount;i++){ const el=document.getElementById('addR'+i); if(el) el.value=''; }
+    for(let i=1;i<=config.blueCount;i++){ const el=document.getElementById('addB'+i); if(el) el.value=''; }
+    showPlaceholder('✅ 已添加 '+targetIssue+' 期');
+    showToast('✅ 已添加 '+targetIssue+' 期');
+}
+
+// ============================================================
+// 16. 联网更新（含更新时间记录）
+// ============================================================
+document.getElementById('updateBtn').addEventListener('click', function(){
+    const config=getConfig();
+    const btn=this;
+    btn.disabled=true; btn.textContent='⏳';
+    const tipEl=document.getElementById('quickTip');
+    if(tipEl) tipEl.style.display='none';
+    showToast('⏳ 正在获取'+config.name+'数据...');
+    const sources=config.dataSources;
+    let currentIndex=0, allRecords=[];
+
+    function fetchWithTimeout(url, timeout=12000, options={}){
+        return Promise.race([ fetch(url, options), new Promise((_,reject)=>setTimeout(()=>reject(new Error('超时')), timeout)) ]);
+    }
+
+    function trySource(index){
+        if(index>=sources.length){
+            if(allRecords.length>0){
+                const existingIssues=new Set(historyData.map(i=>i.issue));
+                const newRecords=allRecords.filter(r=>!existingIssues.has(r.issue));
+                if(newRecords.length===0){
+                    showToast('✅ '+config.name+'已是最新数据');
+                    showPlaceholder('已是最新，无需更新');
+                } else {
+                    newRecords.sort((a,b)=>parseInt(a.issue)-parseInt(b.issue));
+                    historyData=historyData.concat(newRecords);
+                    saveToStorage();
+                    localStorage.setItem('last_update_time', String(Date.now()));
+                    updateStatsAndUI();
+                    showPlaceholder('✅ 新增 '+newRecords.length+' 期（最新 '+newRecords[newRecords.length-1].issue+'）');
+                    showToast('🎉 '+config.name+'新增 '+newRecords.length+' 期');
+                }
+            } else {
+                showPlaceholder('❌ 所有数据源均失败，请手动新增'+config.name+'数据');
+                showToast('❌ '+config.name+'更新失败，请手动输入');
+                if(tipEl) tipEl.style.display='block';
+                localStorage.setItem('last_update_time', String(Date.now()));
+            }
+            btn.disabled=false; btn.textContent='🌐';
+            return;
+        }
+        const url=sources[index];
+        showToast('⏳ 尝试数据源 '+(index+1)+'...');
+        fetchWithTimeout(url, 12000, { headers: COMMON_HEADERS })
+            .then(r=>{ if(!r.ok) throw new Error('HTTP '+r.status); return r.text(); })
+            .then(text=>{
+                let records=[];
+                try{ records=config.parseData(text); } catch(e){ console.warn('解析失败',e); }
+                if(records && records.length>0){
+                    allRecords=allRecords.concat(records);
+                    showToast('✅ 数据源 '+(index+1)+' 获取 '+records.length+' 期');
+                    if(allRecords.length>=100){
+                        const existing=new Set(historyData.map(i=>i.issue));
+                        const newData=allRecords.filter(r=>!existing.has(r.issue));
+                        if(newData.length>0){
+                            newData.sort((a,b)=>parseInt(a.issue)-parseInt(b.issue));
+                            historyData=historyData.concat(newData);
+                            saveToStorage();
+                            localStorage.setItem('last_update_time', String(Date.now()));
+                            updateStatsAndUI();
+                            showPlaceholder('✅ 新增 '+newData.length+' 期（最新 '+newData[newData.length-1].issue+'）');
+                            showToast('🎉 '+config.name+'新增 '+newData.length+' 期');
+                        } else {
+                            showToast('✅ '+config.name+'已是最新数据');
+                            showPlaceholder('已是最新，无需更新');
+                            localStorage.setItem('last_update_time', String(Date.now()));
+                        }
+                        btn.disabled=false; btn.textContent='🌐';
+                        return;
+                    }
+                    trySource(index+1);
+                } else {
+                    showToast('⚠️ 数据源 '+(index+1)+' 解析为空');
+                    trySource(index+1);
+                }
+            })
+            .catch(err=>{
+                console.warn('源失败',err);
+                trySource(index+1);
+            });
+    }
+    trySource(0);
+});
+
+// ============================================================
+// 17. 导出、清除、上传、查询
+// ============================================================
+document.getElementById('exportBtn').addEventListener('click', function(){
+    if(historyData.length===0){ showToast('⚠️ 没有数据可导出'); return; }
+    const config=getConfig();
+    const blob=new Blob([JSON.stringify(historyData,null,2)], {type:'application/json'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url; a.download=config.name+'_history_backup.json';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast('📤 导出 '+historyData.length+' 期'+config.name+'数据成功');
+});
+
+document.getElementById('clearStorageBtn').addEventListener('click', function(){
+    const config=getConfig();
+    if(confirm('确定清除 '+config.name+' 的缓存数据？（不影响另一彩种）')){
+        localStorage.removeItem(config.storageKey);
+        localStorage.removeItem('last_update_time');
+        historyData=[].concat(config.defaultHistory);
+        saveToStorage();
+        updateStatsAndUI();
+        showPlaceholder('已清除 '+config.name+' 缓存，恢复默认数据');
+        showToast('🗑️ '+config.name+'已清除');
+    }
+});
+
+document.getElementById('fileInput').addEventListener('change', function(e){
+    const file=e.target.files[0]; if(!file) return;
+    const reader=new FileReader();
+    const isExcel=/\.(xlsx|xls)$/i.test(file.name);
+    const isJSON=/\.json$/i.test(file.name);
+
+    function loadData(records){
+        if(records && records.length>0){
+            historyData=records;
+            saveToStorage();
+            updateStatsAndUI();
+            showPlaceholder('✅ 已加载 '+records.length+' 期');
+            showToast('✅ 导入 '+records.length+' 期');
+        } else { showToast('❌ 数据解析失败'); }
+    }
+
+    if(isExcel){
+        reader.onload=function(ev){
+            try{
+                const workbook=XLSX.read(ev.target.result, {type:'array'});
+                const firstSheet=workbook.Sheets[workbook.SheetNames[0]];
+                const rows=XLSX.utils.sheet_to_json(firstSheet, {header:1});
+                const records=[];
+                const config=getConfig();
+                let startRow=0;
+                if(rows.length>0){
+                    const first=rows[0];
+                    if(first.length>=(config.redCount+config.blueCount+1) && typeof first[0]==='string' && isNaN(parseInt(first[0]))) startRow=1;
+                }
+                for(let i=startRow;i<rows.length;i++){
+                    const row=rows[i];
+                    if(!row || row.length<(config.redCount+config.blueCount+1)) continue;
+                    const issueRaw=String(row[0]).trim();
+                    let issue=issueRaw;
+                    if(!isNaN(parseInt(issueRaw))) issue=issueRaw.padStart(5,'0');
+                    const reds=[];
+                    for(let j=1;j<=config.redCount;j++){ const val=parseInt(row[j]); if(!isNaN(val)&&val>=1&&val<=config.redMax) reds.push(val); }
+                    if(reds.length!==config.redCount) continue;
+                    reds.sort((a,b)=>a-b);
+                    const blues=[];
+                    for(let j=config.redCount+1;j<=config.redCount+config.blueCount;j++){ const val=parseInt(row[j]); if(!isNaN(val)&&val>=1&&val<=config.blueMax) blues.push(val); }
+                    if(blues.length!==config.blueCount) continue;
+                    blues.sort((a,b)=>a-b);
+                    records.push({issue, red:reds, blue:blues});
+                }
+                loadData(records);
+            } catch(e){ showToast('❌ Excel解析错误'); }
+        };
+        reader.readAsArrayBuffer(file);
+    } else if(isJSON){
+        reader.onload=function(ev){
+            try{
+                const data=JSON.parse(ev.target.result);
+                if(!Array.isArray(data)) throw new Error('不是数组');
+                const config=getConfig();
+                const valid=data.every(item=>item.issue && Array.isArray(item.red) && item.red.length===config.redCount && Array.isArray(item.blue) && item.blue.length===config.blueCount);
+                if(!valid) throw new Error('格式不符');
+                loadData(data);
+            } catch(e){ showToast('❌ JSON格式错误'); }
+        };
+        reader.readAsText(file);
+    } else { showToast('⚠️ 请上传 .xlsx 或 .json'); }
+    e.target.value='';
+});
+
+document.getElementById('searchBtn').addEventListener('click', function(){
+    const input=document.getElementById('searchIssue');
+    const issue=input.value.trim();
+    if(!issue){ showToast('⚠️ 请输入期号'); return; }
+    let target=issue;
+    if(/^\d+$/.test(target)) target=target.padStart(5,'0');
+    const found=historyData.find(item=>item.issue===target);
+    const config=getConfig();
+    const isDlt=currentLottery==='dlt';
+    const ballClassRed=isDlt?'front':'red';
+    const ballClassBlue=isDlt?'back':'blue';
+    const container=document.getElementById('ticketsContainer');
+    const msg=document.getElementById('statusMsg');
+    if(found){
+        container.innerHTML=`
+            <div class="ticket-item" style="border-color:#2a4b6e;">
+                <div class="ticket-header"><span class="label">📋 第 ${found.issue} 期</span><span>和值 ${found.red.reduce((a,b)=>a+b,0)}</span></div>
+                <div class="balls-row">
+                    ${found.red.map(n=>`<span class="ball-sm ${ballClassRed}">${n}</span>`).join('')}
+                    ${found.blue.map(n=>`<span class="ball-sm ${ballClassBlue}">${n}</span>`).join('')}
+                </div>
+            </div>
+        `;
+        msg.textContent='📋 查询结果：第 '+found.issue+' 期';
+        msg.style.background='#e3f2e9'; msg.style.color='#1e5a3a';
+    } else { showToast('❌ 未找到期号 '+issue); }
+});
+
+// ============================================================
+// 18. 生成按钮
+// ============================================================
+document.getElementById('generateBtn').addEventListener('click', function(){
+    if(historyData.length===0){ showToast('⚠️ 请先导入历史数据'); return; }
+    const btn=this;
+    btn.textContent='⏳ 生成中...'; btn.disabled=true;
+
+    setTimeout(()=>{
+        const tickets=generateFiveTickets();
+        const enabled=[];
+        if(document.getElementById('enableHotCold')?.checked) enabled.push('冷热');
+        if(document.getElementById('enableTrend')?.checked) enabled.push('走势');
+        if(document.getElementById('enableSum')?.checked) enabled.push('和值');
+        if(document.getElementById('enableMorph')?.checked) enabled.push('形态');
+        if(document.getElementById('enableChart')?.checked) enabled.push('重连边');
+        if(document.getElementById('enableMissLayer')?.checked) enabled.push('遗漏');
+        if(document.getElementById('enableZone')?.checked) enabled.push('区间');
+        if(document.getElementById('enableSpan')?.checked) enabled.push('跨度');
+        if(document.getElementById('enableGolden')?.checked) enabled.push('黄金');
+        const label=enabled.length>0 ? '🎯 '+enabled.join('+') : '🎲 纯随机';
+        renderTickets(tickets, label+' · 5注（均未出现过）');
+        btn.textContent='🎯 生成 5 注';
+        btn.disabled=false;
+    }, 50);
+});
+
+// ============================================================
+// 19. 更新UI（统一入口）
+// ============================================================
+function updateStatsAndUI(){
+    updateTotalCount();   // 更新下方总期数
+    updateDataStatus();   // 更新顶部最新期号
+    updateAddForm();
+    updateFilterGrid();
+    updateSearchPlaceholder();
+    loadStrategyState();  // 恢复策略状态
+    saveStrategyState();  // 保证持久化
+}
+
+// ============================================================
+// 20. 彩种切换
+// ============================================================
+document.getElementById('lotteryType').addEventListener('change', function(){
+    saveStrategyState();
+    currentLottery=this.value;
+    const config=getConfig();
+    if(!loadFromStorage()){ historyData=[].concat(config.defaultHistory); saveToStorage(); }
+    updateStatsAndUI();
+    showPlaceholder('✅ 已切换至 '+config.name+'，'+historyData.length+' 期数据');
+    document.getElementById('searchIssue').value='';
+    showToast('🔄 已切换到 '+config.name);
+});
+
+// ============================================================
+// 21. 自动更新检查
+// ============================================================
+function autoCheckUpdate(){
+    const lastUpdate = localStorage.getItem('last_update_time');
+    const now = Date.now();
+    const needUpdate = !lastUpdate || (now - parseInt(lastUpdate)) > 86400000 || historyData.length === 0;
+    if(needUpdate){
+        setTimeout(() => {
+            if(historyData.length === 0){
+                showToast('🔄 正在自动获取数据...');
+                document.getElementById('updateBtn').click();
+            } else {
+                showToast('🔄 自动检测到数据过期，正在更新...');
+                document.getElementById('updateBtn').click();
+            }
+        }, 2000);
+    }
+}
+
+// ============================================================
+// 22. 初始化
+// ============================================================
+function initApp(){
+    const saved = localStorage.getItem('lottery_strategy_state');
+    if(saved){
+        try{
+            const state = JSON.parse(saved);
+            if(state.lotteryType){
+                document.getElementById('lotteryType').value = state.lotteryType;
+                currentLottery = state.lotteryType;
+            }
+        }catch(e){}
+    }
+    initData();               // 加载数据
+    updateStatsAndUI();       // 更新显示
+    showPlaceholder('✅ '+historyData.length+' 期已加载（'+getConfig().name+'）');
+    autoCheckUpdate();        // 自动更新检测
+}
+
+initApp();
+</script>
+</body>
+</html>
